@@ -44,6 +44,7 @@ object CSVParser {
     var state: State = Start
     var pos = 0
     val buflen = buf.length
+    var escapedLine = false
 
     if (buf.length > 0 && buf(0) == '\uFEFF') {
       pos += 1
@@ -57,6 +58,28 @@ object CSVParser {
             case `quoteChar` => {
               state = QuoteStart
               pos += 1
+            }
+            case `escapeChar` => {
+              if (pos + 1 < buflen) {
+                buf(pos + 1) match {
+                  case `delimiter` | `escapeChar` | '\n' | '\u2028' | '\u2029' | '\u0085'  => {
+                    field += buf(pos + 1)
+                    state = Field
+                    if (pos + 2 >= buflen && matches_newline(buf(pos + 1))) {
+                      // We are at the end of the line and we escaped the new line char
+                      escapedLine = true
+                    }
+                    pos += 2
+                  }
+                  case _ => {
+                    field += '\\'
+                    state = Field
+                    pos += 1
+                  }
+                }
+              } else {
+                throw new MalformedCSVException(buf.mkString)
+              }
             }
             case `delimiter` => {
               fields :+= field.toString
@@ -93,15 +116,23 @@ object CSVParser {
               pos += 1
             }
             case `escapeChar` => {
-              if (pos + 1 < buflen
-                && (buf(pos + 1) == escapeChar || buf(pos + 1) == delimiter)) {
-                field += buf(pos + 1)
-                state = Field
-                pos += 2
-              } else if (pos + 1 < buflen) {
-                field += '\\'
-                state = Field
-                pos += 1
+              if (pos + 1 < buflen) {
+                buf(pos + 1) match {
+                  case `delimiter` | `escapeChar` | '\n' | '\u2028' | '\u2029' | '\u0085'  => {
+                    field += buf(pos + 1)
+                    state = Field
+                    if (pos + 2 >= buflen && matches_newline(buf(pos + 1))) {
+                      // We are at the end of the line and we escaped the new line char
+                      escapedLine = true
+                    }
+                    pos += 2
+                  }
+                  case _ => {
+                    field += '\\'
+                    state = Field
+                    pos += 1
+                  }
+                }
               } else {
                 throw new MalformedCSVException(buf.mkString)
               }
@@ -138,15 +169,21 @@ object CSVParser {
           c match {
             case `escapeChar` => {
               if (pos + 1 < buflen) {
-                if (buf(pos + 1) == escapeChar
-                  || buf(pos + 1) == delimiter) {
-                  field += buf(pos + 1)
-                  state = Field
-                  pos += 2
-                } else {
-                  field += '\\'
-                  state = Field
-                  pos += 1
+                buf(pos + 1) match {
+                  case `delimiter` | `escapeChar` |  '\n' | '\u2028' | '\u2029' | '\u0085' => {
+                    field += buf(pos + 1)
+                    state = Field
+                    if (pos + 2 >= buflen && matches_newline(buf(pos + 1))) {
+                      // We are at the end of the line and we escaped the new line char
+                      escapedLine = true
+                    }
+                    pos += 2
+                  }
+                  case _ => {
+                    field += '\\'
+                    state = Field
+                    pos += 1
+                  }
                 }
               } else {
                 state = QuoteEnd
@@ -283,6 +320,9 @@ object CSVParser {
         }
       }
     }
+    if (escapedLine) {
+      return None
+    }
     (state: @switch) match {
       case Delimiter => {
         fields :+= ""
@@ -302,6 +342,13 @@ object CSVParser {
         }
         Some(fields.toList)
       }
+    }
+  }
+
+  def matches_newline(c: Char): Boolean = {
+    (c) match {
+      case '\n' | '\u2028' | '\u2029' | '\u0085' => true
+      case _ => false
     }
   }
 }
