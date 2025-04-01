@@ -201,6 +201,34 @@ class CSVReaderSpec extends AnyFunSpec with Matchers with Using {
       res(1) should be(List("\nd", "e", "f"))
     }
 
+    it("should correctly parse fields with escaped line breaks") {
+      var res: List[Seq[String]] = Nil
+      implicit val format = new DefaultCSVFormat {
+        override val escapeChar: Char = '\\'
+      }
+      using(CSVReader.open(new FileReader("src/test/resources/line-breaks-escaped.csv"))(format)) { reader =>
+        reader foreach { fields =>
+          res = res :+ fields
+        }
+      }
+      res(0) should be(List("a", "b\nb", "c"))
+      res(1) should be(List("\nd", "e", "f"))
+    }
+
+    it("should correctly parse rows that start with escape characters") {
+      var res: List[Seq[String]] = Nil
+      implicit val format = new DefaultCSVFormat {
+        override val escapeChar: Char = '\\'
+      }
+      using(CSVReader.open(new FileReader("src/test/resources/starts-with-escape.csv"))(format)) { reader =>
+        reader foreach { fields =>
+          res = res :+ fields
+        }
+      }
+      res(0) should be(List(",", "a", "b"))
+      res(1) should be(List("\\", "c", "d"))
+    }
+
     it("read TSV from file") {
       implicit val format = new TSVFormat {}
       var res: List[Seq[String]] = Nil
