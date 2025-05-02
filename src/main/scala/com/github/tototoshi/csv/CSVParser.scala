@@ -62,7 +62,7 @@ object CSVParser {
             case `escapeChar` => {
               if (pos + 1 < buflen) {
                 buf(pos + 1) match {
-                  case `delimiter` | `escapeChar` | '\n' | '\u2028' | '\u2029' | '\u0085'  => {
+                  case `delimiter` | `escapeChar` | '\n' | '\u2028' | '\u2029' | '\u0085' => {
                     field += buf(pos + 1)
                     state = Field
                     if (pos + 2 >= buflen && matches_newline(buf(pos + 1))) {
@@ -118,7 +118,7 @@ object CSVParser {
             case `escapeChar` => {
               if (pos + 1 < buflen) {
                 buf(pos + 1) match {
-                  case `delimiter` | `escapeChar` | '\n' | '\u2028' | '\u2029' | '\u0085'  => {
+                  case `delimiter` | `escapeChar` | '\n' | '\u2028' | '\u2029' | '\u0085' => {
                     field += buf(pos + 1)
                     state = Field
                     if (pos + 2 >= buflen && matches_newline(buf(pos + 1))) {
@@ -170,7 +170,7 @@ object CSVParser {
             case `escapeChar` => {
               if (pos + 1 < buflen) {
                 buf(pos + 1) match {
-                  case `delimiter` | `escapeChar` |  '\n' | '\u2028' | '\u2029' | '\u0085' => {
+                  case `delimiter` | `escapeChar` | '\n' | '\u2028' | '\u2029' | '\u0085' => {
                     field += buf(pos + 1)
                     state = Field
                     if (pos + 2 >= buflen && matches_newline(buf(pos + 1))) {
